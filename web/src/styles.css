@@ -1,0 +1,146 @@
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --border: #d9dee5;
+  --text: #1f2933;
+  --muted: #667085;
+  --accent: #2f5bea;
+  --danger: #c0392b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 680px;
+  margin: 2.5rem auto;
+  padding: 0 1.25rem;
+}
+
+header h1 {
+  margin: 0 0 .25rem;
+  font-size: 2rem;
+}
+
+.subtitle {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+}
+
+.note-form {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.note-form label {
+  font-weight: 600;
+  font-size: .9rem;
+}
+
+.note-form input,
+.note-form textarea {
+  padding: .55rem .65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  resize: vertical;
+}
+
+.note-form button {
+  align-self: flex-start;
+  margin-top: .5rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  padding: .5rem .9rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: #fff;
+}
+
+button.secondary {
+  background: #fff;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+button.danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.error {
+  color: var(--danger);
+  font-size: .9rem;
+  margin: .25rem 0 0;
+}
+
+h2 {
+  font-size: 1.2rem;
+}
+
+.notes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.note {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+}
+
+.note-title {
+  margin: 0 0 .3rem;
+  font-size: 1.05rem;
+}
+
+.note-body {
+  margin: 0 0 .5rem;
+  white-space: pre-wrap;
+}
+
+.note-meta {
+  display: block;
+  color: var(--muted);
+  font-size: .8rem;
+  margin-bottom: .6rem;
+}
+
+.note-actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.confirm-text {
+  font-size: .9rem;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.empty {
+  color: var(--muted);
+}

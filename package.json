@@ -1,0 +1,10 @@
+{
+  "name": "faithfuld",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FaithfulD Book Notes — FastAPI backend + vanilla web frontend. `npm run build` compiles the web/ frontend into backend/static.",
+  "type": "module",
+  "scripts": {
+    "build": "node web/build.mjs"
+  }
+}

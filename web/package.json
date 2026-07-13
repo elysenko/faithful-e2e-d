@@ -1,0 +1,10 @@
+{
+  "name": "faithfuld-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FaithfulD Book Notes frontend (vanilla HTML/JS/CSS) built into backend/static.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}

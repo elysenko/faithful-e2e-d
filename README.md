@@ -9,8 +9,20 @@ A minimal single-container FastAPI + SQLite web app for capturing short notes ab
 - Delete a note (URL-addressable confirm via `?confirmDelete=<id>`)
 - Persistent storage via SQLite
 
+## Frontend
+The UI is a zero-framework vanilla HTML/JS/CSS app. Its source lives in `web/src/`
+and is compiled into `backend/static/` (served by FastAPI) via a dependency-free
+Node build:
+```bash
+npm ci        # no third-party deps — works offline
+npm run build # copies web/src/* -> backend/static/
+```
+The built assets are committed to `backend/static/` so the Docker image serves them
+directly without a Node toolchain at runtime.
+
 ## Run locally
 ```bash
+npm run build                                  # refresh backend/static from web/src
 pip install -r backend/requirements.txt
 uvicorn backend.app.main:app --reload --port 8080
 # open http://localhost:8080
