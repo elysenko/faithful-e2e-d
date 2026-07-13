@@ -1,0 +1,109 @@
+<main class="container">
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">📖</span>
+      <div class="brand-text">
+        <h1>FaithfulD Book Notes</h1>
+        <p class="subtitle">Capture short notes about the books you read.</p>
+      </div>
+    </div>
+  </header>
+
+  <section class="panel compose" aria-labelledby="compose-heading">
+    <h2 id="compose-heading" class="panel-heading">Add a note</h2>
+    <form class="note-form" (ngSubmit)="addNote()" autocomplete="off" novalidate>
+      <div class="field">
+        <label for="title">Book title</label>
+        <input
+          id="title"
+          name="title"
+          type="text"
+          maxlength="200"
+          placeholder="e.g. The Pragmatic Programmer"
+          data-testid="note-title"
+          [(ngModel)]="title"
+        />
+      </div>
+
+      <div class="field">
+        <label for="body">Note</label>
+        <textarea
+          id="body"
+          name="body"
+          rows="3"
+          maxlength="1000"
+          placeholder="A short thought about this book…"
+          data-testid="note-body"
+          [(ngModel)]="body"
+        ></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="primary" data-testid="add-note" [disabled]="submitting">
+          {{ submitting ? 'Adding…' : 'Add note' }}
+        </button>
+      </div>
+
+      @if (formError) {
+        <p class="error" role="alert" data-testid="form-error">{{ formError }}</p>
+      }
+    </form>
+  </section>
+
+  <section class="panel notes-panel" aria-labelledby="notes-heading">
+    <div class="notes-panel-header">
+      <h2 id="notes-heading" class="panel-heading">Your notes</h2>
+      @if (!loading && !loadError) {
+        <span class="notes-count" data-testid="notes-count">{{ notes.length }} note(s)</span>
+      }
+    </div>
+
+    @if (loading) {
+      <p class="status status-loading" data-testid="notes-loading">Loading your notes…</p>
+    } @else if (loadError) {
+      <p class="status status-error" role="alert" data-testid="notes-error">{{ loadError }}</p>
+    } @else if (notes.length === 0) {
+      <p class="status empty" data-testid="empty-state">No notes yet — add your first one above.</p>
+    } @else {
+      <ul class="notes" aria-label="Book notes, newest first">
+        @for (note of notes; track trackById($index, note)) {
+          <li class="note" [attr.data-testid]="'note-' + note.id">
+            <h3 class="note-title" data-testid="note-title-text">{{ note.title }}</h3>
+            <p class="note-body">{{ note.body }}</p>
+            <span class="note-meta">{{ formatDate(note.created_at) }}</span>
+
+            <div class="note-actions">
+              @if (confirmDeleteId === note.id) {
+                <div class="confirm">
+                  <span class="confirm-text">Delete this note?</span>
+                  <button
+                    type="button"
+                    class="danger"
+                    [attr.data-testid]="'confirm-delete-' + note.id"
+                    (click)="confirmDelete(note.id)"
+                  >
+                    Confirm
+                  </button>
+                  <button type="button" class="secondary" (click)="cancelDelete()">Cancel</button>
+                </div>
+              } @else {
+                <button
+                  type="button"
+                  class="secondary"
+                  [attr.data-testid]="'delete-' + note.id"
+                  (click)="askDelete(note.id)"
+                >
+                  Delete
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <footer class="app-footer">
+    <p>Notes are saved to your FaithfulD library and listed newest first.</p>
+  </footer>
+</main>
