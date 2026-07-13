@@ -1,0 +1,5 @@
+{
+  "ready_testid": "app-ready",
+  "expect_text": [],
+  "reject_signatures": ["Loading...", "Failed to load", "Internal Server Error"]
+}
