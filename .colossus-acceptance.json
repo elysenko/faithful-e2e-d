@@ -1,5 +1,5 @@
 {
   "ready_testid": "app-ready",
-  "expect_text": [],
-  "reject_signatures": ["Loading...", "Failed to load", "Internal Server Error"]
+  "expect_text": ["faithfuld book notes", "capture short notes about the books"],
+  "reject_signatures": ["Loading...", "Failed to load", "Internal Server Error", "faithful-e2e-d <span class=\"badge\">deployed</span>", "This is a placeholder page"]
 }
