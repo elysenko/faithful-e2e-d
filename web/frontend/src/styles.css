@@ -32,7 +32,10 @@ body {
     var(--bg);
   color: var(--text);
   line-height: 1.55;
+  font-size: 16px;
   min-height: 100vh;
+  min-height: 100svh;
+  overscroll-behavior-y: contain;
 }
 
 .skip-link {
@@ -108,15 +111,19 @@ body {
 
 .field input,
 .field textarea {
-  padding: .6rem .7rem;
+  padding: .65rem .7rem;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
   font: inherit;
+  /* 16px minimum prevents iOS auto-zoom on focus. */
+  font-size: 16px;
+  min-height: 44px;
   color: var(--text);
   background: #fffdf9;
   resize: vertical;
   transition: border-color .12s ease, box-shadow .12s ease;
 }
+.field textarea { min-height: 88px; }
 
 .field input:focus,
 .field textarea:focus {
@@ -136,8 +143,11 @@ body {
 /* Buttons */
 button {
   font: inherit;
+  font-size: 1rem;
   cursor: pointer;
-  padding: .55rem 1rem;
+  padding: .55rem 1.1rem;
+  /* 44px minimum touch target for reliable one-handed tapping on mobile. */
+  min-height: 44px;
   border-radius: 8px;
   border: 1px solid transparent;
   transition: background .12s ease, border-color .12s ease, transform .04s ease;
@@ -268,6 +278,15 @@ button.danger:hover { background: var(--danger-strong); }
 }
 
 @media (max-width: 520px) {
-  .container { padding: 1.75rem 1rem 2.5rem; }
+  .container {
+    padding: 1.75rem 1rem calc(2.5rem + env(safe-area-inset-bottom));
+  }
   .brand-text h1 { font-size: 1.7rem; }
+  /* Full-width, comfortably tappable actions on narrow screens. */
+  .form-actions { width: 100%; }
+  .form-actions button.primary { width: 100%; }
+  .note-actions,
+  .confirm { width: 100%; }
+  .confirm button,
+  .note-actions > button { flex: 1 1 auto; }
 }

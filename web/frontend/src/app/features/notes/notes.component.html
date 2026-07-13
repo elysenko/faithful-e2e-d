@@ -54,7 +54,7 @@
     <div class="notes-panel-header">
       <h2 id="notes-heading" class="panel-heading">Your notes</h2>
       @if (!loading && !loadError) {
-        <span class="notes-count" data-testid="notes-count">{{ notes.length }} note(s)</span>
+        <span class="notes-count" data-testid="notes-count">{{ notes().length }} note(s)</span>
       }
     </div>
 
@@ -62,11 +62,11 @@
       <p class="status status-loading" data-testid="notes-loading">Loading your notes…</p>
     } @else if (loadError) {
       <p class="status status-error" role="alert" data-testid="notes-error">{{ loadError }}</p>
-    } @else if (notes.length === 0) {
+    } @else if (notes().length === 0) {
       <p class="status empty" data-testid="empty-state">No notes yet — add your first one above.</p>
     } @else {
       <ul class="notes" aria-label="Book notes, newest first">
-        @for (note of notes; track trackById($index, note)) {
+        @for (note of notes(); track trackById($index, note)) {
           <li class="note" [attr.data-testid]="'note-' + note.id">
             <h3 class="note-title" data-testid="note-title-text">{{ note.title }}</h3>
             <p class="note-body">{{ note.body }}</p>

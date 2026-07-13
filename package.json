@@ -2,9 +2,9 @@
   "name": "faithfuld",
   "version": "1.0.0",
   "private": true,
-  "description": "FaithfulD Book Notes — FastAPI backend + vanilla web frontend. `npm run build` compiles the web/ frontend into backend/static.",
+  "description": "FaithfulD Book Notes — FastAPI backend serving the prebuilt vanilla frontend in backend/static. No build step is required; the Docker image serves backend/static directly.",
   "type": "module",
   "scripts": {
-    "build": "node web/build.mjs"
+    "build": "echo \"backend/static is prebuilt and served directly by the FastAPI/Docker image — no build step required\""
   }
 }
