@@ -1,82 +1,62 @@
 # Pipeline Task Decomposition
 
 ## Summary
-FaithfulD Book Notes is a minimal single-container FastAPI + static-frontend web app that lets users create book notes (title + body), list them newest-first, and delete them via an inline confirmation flow. The API is served from `/api/*` and the vanilla HTML/JS SPA is served from the same origin. Per the pipeline auth model this build additionally layers full authentication (admin + user roles) and an admin settings surface for the provisioned backing services (PostgreSQL, MinIO).
+FaithfulD Book Notes is a single-page book-notes app: a FastAPI backend with a stdlib `sqlite3` datastore and a vanilla-JS static frontend served by FastAPI's `StaticFiles`. Users can list notes newest-first, create a note (title + body), and delete a note through an inline, URL-addressable confirmation step (`?confirmDelete=<id>`). The codebase is already fully implemented and deployed from the `backend/` tree; this decomposition is a **verification-and-guard** pass to confirm every spec requirement holds and that no out-of-scope surface is introduced. The spec's Non-goals explicitly exclude auth, user accounts, admin, Postgres, and MinIO, and the user forbids re-scoping — so those baseline features are intentionally **not** part of the surface contract.
 
 ## Surface contract
-Routes / screens / entities the system must expose:
+**Entities**
+- `Note`: `id` (INTEGER PK AUTOINCREMENT), `title` (≤200 chars, trimmed, non-empty), `body` (≤1000 chars, trimmed, non-empty), `created_at` (UTC ISO string).
 
-- **Public app screens**
-  - `/` — landing page titled "FaithfulD Book Notes": add-note form (`#title`, `#body`), notes list (`<ul id="notes">`), inline delete-confirm driven by `?confirmDelete=<id>`.
-- **Auth screens (full_auth)**
-  - `/login` — user + admin login.
-  - `/signup` — user registration (first signup → ADMIN, subsequent → USER).
-  - logout action.
-- **Admin screens**
-  - `/admin` — protected admin route group.
-  - `/admin/settings` — service/credential configuration page.
-- **API — notes**
-  - `GET /api/health` → `{"status":"ok"}`.
-  - `GET /api/health/deep` → `SELECT 1` DB check → ok/500.
-  - `GET /api/notes` → `list[NoteOut]` ordered `id DESC`.
-  - `POST /api/notes` → create from `NoteCreate` → `NoteOut` (201).
-  - `DELETE /api/notes/{note_id}` → 204 on success, 404 if absent.
-- **API — auth / admin**
-  - login / signup / logout endpoints; admin guard middleware on `(admin)` group.
-  - `GET /api/admin/settings` — list service keys (masked values + configured status), admin only.
-  - `PATCH /api/admin/settings` — upsert key/value pairs, admin only.
-- **Entities**
-  - `Note` — `id` (int PK), `title` (text, required, ≤200), `body` (text, required, ≤1000), `created_at` (ISO timestamp).
-  - `User` — with `role` field (`UserRole` enum).
-  - `SystemSetting` — `key` (PK), `value`, `updatedAt`.
+**API routes** (in `backend/app/main.py`)
+- `GET /api/health` → 200 `{"status":"ok"}`
+- `GET /api/health/deep` → 200 after `SELECT 1` (DB reachable), 500 if not
+- `GET /api/notes` → 200 `list[NoteOut]`, `ORDER BY id DESC` (newest-first)
+- `POST /api/notes` → 201 `NoteOut` (server sets UTC ISO `created_at`); invalid input → 422
+- `DELETE /api/notes/{note_id}` → 204 on success, 404 if absent
+
+**Screens / UI** (`backend/static/`)
+- `/` — single-page app: `<h1>FaithfulD Book Notes</h1>`, `<title>` containing "FaithfulD", add-note form (`#title` input, `#body` textarea, submit), `<ul id="notes">` list container.
+- Delete flow: inline confirmation driven by `?confirmDelete=<id>`, restored on load via `url-state.js`.
+
+**Explicitly out of scope (do NOT generate):** `/login`, `/signup`, logout, auth guards, admin route group, `/admin/settings`, `User`/role models, `SystemSetting` model, `resolveConfig`/`lib/config`, `/api/admin/settings`, Postgres, MinIO, and integration client modules. These contradict the approved spec's Non-goals — see Open questions.
 
 ## db_agent tasks
-- [ ] Create `backend/app/db.py` with `get_conn()` returning a `sqlite3.Connection` (row factory = `sqlite3.Row`) and `init_db()` that reads `DB_PATH`, ensures the parent dir exists, and runs `CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL)`.
-- [ ] Define the `notes` schema exactly per spec: `id`, `title`, `body`, `created_at`; ensure newest-first ordering is supported via `id DESC`.
-- [ ] Add a `User` model/table with a `role` field using `enum UserRole { ADMIN USER }` and `role @default(USER)` (full_auth). First signup becomes ADMIN, subsequent users USER (enforced in backend).
-- [ ] Add a `SystemSetting` model/table — `key String @id`, `value String`, `updatedAt DateTime @updatedAt` — to back admin settings for the provisioned services.
-- [ ] Provide schema bootstrap for all tables on startup (create-if-missing) consistent with the SQLite/no-ORM approach in the spec.
+- [ ] Verify `backend/app/db.py`: `get_conn()` uses row factory `sqlite3.Row`, and `init_db()` creates the parent dir of `DB_PATH` plus `CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL)`. No edit expected.
+- [ ] Verify the persistence path resolves to `DB_PATH=/data/faithfuld.db` in-container and `./faithfuld.db` locally, and that `init_db()` is idempotent across process restarts (create-if-missing).
+- [ ] Confirm newest-first ordering is supported by the autoincrement `id` PK (`ORDER BY id DESC`); no separate index/column required.
+- [ ] Guard: confirm NO `User`, `UserRole`, `SystemSetting`, or Postgres tables/migrations exist or are added — schema is `notes` only, per spec Non-goals.
 
 ## backend_agent tasks
-- [ ] Create `backend/app/main.py`: instantiate `FastAPI()`, call `init_db()` on startup, and mount `StaticFiles(directory="backend/static", html=True)` at `/` last so `/api/*` routes resolve first.
-- [ ] Implement `GET /api/health` → `{"status":"ok"}` and `GET /api/health/deep` → runs `SELECT 1`, returns ok or 500.
-- [ ] Implement `GET /api/notes` → select all notes `ORDER BY id DESC`, return `list[NoteOut]`.
-- [ ] Implement `POST /api/notes` → validate `NoteCreate`, set `created_at` to UTC ISO now, insert, return created `NoteOut` with 201.
-- [ ] Implement `DELETE /api/notes/{note_id}` → delete row, 204 on success, 404 if row absent.
-- [ ] Create `backend/app/models.py` with `NoteCreate(title, body)` (trimmed, non-empty, title ≤200, body ≤1000; invalid → 422) and `NoteOut(id, title, body, created_at)`.
-- [ ] Add auth flows (full_auth): login, signup, logout endpoints; first signup gets `ADMIN` role, subsequent users get `USER`; protect all non-public app routes.
-- [ ] Add admin guard middleware and the protected `(admin)` route group; admin access via role check in the `(admin)` layout.
-- [ ] Create `lib/config.ts`-equivalent `resolveConfig(key)` helper: read `process.env[key]` first; if value equals `PLACEHOLDER_CONFIGURE_IN_SETTINGS` or is absent, read from the `SystemSetting` row; return null if neither is set.
-- [ ] Implement `GET /api/admin/settings` (list service keys for `postgresql` and `minio` with masked values + configured status) and `PATCH /api/admin/settings` (upsert key/value pairs, admin role required).
-- [ ] Create `Dockerfile` (`python:3.12-slim`, install `requirements.txt`, copy `backend/`, `ENV DB_PATH=/data/faithfuld.db PORT=8080`, `EXPOSE 8080`, `CMD` running uvicorn on `0.0.0.0:${PORT}`) and `.dockerignore` (`.git`, `__pycache__`, `*.db`); add `backend/requirements.txt` with `fastapi`, `uvicorn[standard]`, `pydantic`.
+- [ ] Verify `backend/app/main.py` route surface and behavior: `GET /api/health` → `{"status":"ok"}`; `GET /api/health/deep` runs `SELECT 1`; `GET /api/notes` selects `ORDER BY id DESC` → `list[NoteOut]`; `POST /api/notes` validates `NoteCreate`, sets UTC ISO `created_at`, inserts, returns 201 `NoteOut`; `DELETE /api/notes/{note_id}` → 204 on delete, 404 if absent.
+- [ ] Verify the catch-all `StaticFiles` mount at `/` is registered **last**, after every `/api/*` route, so API routes win. Preserve this ordering.
+- [ ] Verify `backend/app/models.py`: `NoteCreate(title, body)` trims and rejects empty title/body and enforces `title ≤ 200` / `body ≤ 1000` (violations → 422 via Pydantic); `NoteOut(id, title, body, created_at)` shape correct.
+- [ ] Verify `backend/requirements.txt` pins `fastapi==0.111.0`, `uvicorn[standard]==0.30.1`, `pydantic==2.7.4`; DB uses stdlib `sqlite3` (no new deps).
+- [ ] Guard against out-of-scope drift: confirm NO auth/login/signup/logout endpoints, admin guard middleware, `(admin)` route group, `resolveConfig`/`lib/config`, `/api/admin/settings`, integration clients, or Postgres/MinIO wiring exist in `backend/`. Reject any attempt to add them — they violate the spec's explicit Non-goals.
 
 ## ui_agent tasks
-- [ ] Create `backend/static/index.html`: `<h1>FaithfulD Book Notes</h1>`, add-note form with `#title` input + `#body` textarea + submit button, `<ul id="notes">` container; link `styles.css` and `app.js`.
-- [ ] Create `backend/static/app.js`: on load call `loadNotes()` (`GET /api/notes`) and render each note (title, body, timestamp, Delete button) newest-first, escaping user text via `textContent`.
-- [ ] In `app.js`, wire form submit → `POST /api/notes`, then reload list and clear form; render empty/loading/error states for the notes list.
-- [ ] In `app.js`, implement delete flow: Delete button sets `?confirmDelete=<id>`; on load if present show inline confirm → on confirm `DELETE /api/notes/{id}`, then clear the param and reload.
-- [ ] Create `backend/static/styles.css`: minimal readable layout — centered container, form spacing, note cards.
-- [ ] Add `/login` and `/signup` screens as part of the main app (full_auth); show the admin section in navigation only to admins.
-- [ ] Create the `/admin/settings` page: list `postgresql` and `minio` each with a configured/unconfigured badge and a per-service credential form bound to `GET`/`PATCH /api/admin/settings`.
+- [ ] Verify `backend/static/index.html`: `<h1>FaithfulD Book Notes</h1>` and `<title>` both contain literal "FaithfulD"; add-note form has `#title` input, `#body` textarea, and submit; `<ul id="notes">` present; page loads `styles.css` and `js/main.js`.
+- [ ] Verify list rendering on load: `GET /api/notes` renders notes newest-first; empty/loading/error states handled gracefully.
+- [ ] Verify create flow: form submit → `POST /api/notes` → reload list + clear form inputs.
+- [ ] Verify delete flow: Delete sets `?confirmDelete=<id>`, shows inline confirm, `DELETE`s on confirm, clears the param, and reloads; state restored from URL on load (`url-state.js`).
+- [ ] Verify XSS safety: all user-supplied text written via `textContent` (no `innerHTML`); endpoints use relative paths (`api/notes`, no leading slash) to support ingress sub-path serving.
+- [ ] Guard: confirm NO login/signup/admin-settings screens or nav are added; all app screens remain public per spec Non-goals.
 
 ## service_agent tasks
-- [ ] Build the client-side data layer in `app.js` for notes: helper functions wrapping `GET /api/notes`, `POST /api/notes`, and `DELETE /api/notes/{id}` (same-origin fetch, JSON handling, status-code branching for 201/204/404/422).
-- [ ] Wire the auth screens to the backend auth endpoints (login/signup/logout) and handle session/redirect state.
-- [ ] Wire the `/admin/settings` UI to `GET /api/admin/settings` (load masked values + configured status) and `PATCH /api/admin/settings` (submit credential updates).
+- [ ] Verify the client-side data layer (`backend/static/js/api.js`) wraps the backend contract: list (`GET api/notes`), create (`POST api/notes`), delete (`DELETE api/notes/{id}`) using same-origin relative URLs, with JSON handling and status-code branching (201/204/404/422); errors surface to callers.
+- [ ] Verify the JS modules (`main.js`, `note-form.js`, `note-card.js`, `notes-list.js`, `format.js`, `url-state.js`) wire UI to the API client without duplicating fetch logic; confirm `web/src/js/*` (dead scaffolding) is NOT edited or served.
 
 ## tester tasks
-- [ ] Health: `GET /api/health` → 200 ok; `GET /api/health/deep` → 200 with DB reachable.
-- [ ] Create: `POST /api/notes` with title+body → 201 and returned object has `id` + `created_at`.
-- [ ] List order: create two notes; `GET /api/notes` returns the second one first (`id DESC`).
-- [ ] Persist: restart container against same volume → notes still returned.
-- [ ] Delete: `DELETE /api/notes/{id}` → 204; subsequent GET omits it; deleting unknown id → 404.
-- [ ] Validation: empty/whitespace title or body → 422; over-length title (>200) / body (>1000) rejected.
-- [ ] UI happy path: load `/`, confirm "FaithfulD Book Notes" renders in `<h1>`; add a note via form → appears at top; delete via button + `?confirmDelete=<id>` confirm → disappears.
-- [ ] Auth: signup (first user → ADMIN, second → USER), login, logout; non-public routes reject unauthenticated access; `/admin` and `/admin/settings` reject non-admins.
-- [ ] Admin settings: `GET /api/admin/settings` lists `postgresql` + `minio` with masked values/configured status; `PATCH` upserts and persists; both require admin role.
+- [ ] Health: `GET /api/health` → 200 `{"status":"ok"}`; `GET /api/health/deep` → 200 (DB reachable).
+- [ ] Create: `POST /api/notes` `{title, body}` → 201 with `id` and `created_at`.
+- [ ] List order: create two notes; assert `GET /api/notes` returns the second-created first (`id DESC`).
+- [ ] Delete: `DELETE /api/notes/{id}` → 204; subsequent list omits it; unknown id → 404.
+- [ ] Validation: empty/whitespace title or body → 422; `title > 200` or `body > 1000` → 422.
+- [ ] Persistence: restart the process against the same `DB_PATH` file → previously created notes still returned.
+- [ ] UI end-to-end: load `/`, assert "FaithfulD" renders; add a note via form → appears at top; click Delete → `?confirmDelete=<id>` inline confirm → Confirm → note disappears.
+- [ ] Regression guard: assert no `/login`, `/signup`, `/admin/*`, or `/api/admin/*` routes respond — out-of-scope surfaces must remain absent.
 
 ## Open questions
-- **Auth conflict:** The spec explicitly lists "No auth, no user accounts" as a non-goal, but the pipeline `<auth_model>` is `full_auth` (roles: admin, user). Per pipeline rules the full_auth surface (User model, login/signup, admin guard) has been included. Confirm whether auth should truly be layered onto this app or whether the spec's no-auth intent overrides it.
-- **Backing-services conflict:** The spec's stack is FastAPI + local `sqlite3` at `DB_PATH`, but `<spec_deployments>` provisions `postgresql` and `minio`. Admin-settings tasks for these services were added per pipeline rules. Confirm whether the app should actually use PostgreSQL/MinIO (e.g. DB migration, object storage for note attachments) or whether SQLite remains authoritative and the settings page merely surfaces provisioned credentials.
-- **Framework mismatch for config helper:** Admin-settings rules reference `lib/config.ts` / `process.env` (Node/TS conventions), but the app is Python/FastAPI. The `resolveConfig` helper has been described as a Python-equivalent module (`backend/app/config.py`); confirm the intended language/placement.
-- **Integrations:** `<spec_integrations>` contains only a placeholder entry ("None — no third-party APIs or SDKs") with no real env keys, and `<placeholder_integrations>` is None, so no integration client modules were created. Confirm there are genuinely no third-party integrations.
+- **Auth/deployment baseline conflict (resolved in favor of spec).** Pipeline inputs specify `auth_model=full_auth`, `auth_roles=admin,user`, and `spec_deployments=postgresql,minio`. The approved spec's Non-goals **explicitly exclude** auth, user accounts, admin, Postgres, and MinIO, note the existing code already correctly resolved this by omitting them, and record that the user forbids re-scoping. This decomposition follows the spec (the authoritative source of truth for surface area) and omits all auth/admin/settings/Postgres/MinIO tasks. If those surfaces are genuinely intended, the spec must be amended and re-approved before any downstream agent generates them.
+- **Integrations input is a placeholder.** `spec_integrations` contains only a synthetic entry ("None — no third-party APIs or SDKs") with a derived env key, and the spec declares no integrations; `placeholder_integrations` is None. No integration client tasks are generated.
+- **Production persistence.** `k8s/deployment.yaml` mounts no `/data` PVC, so SQLite lives on ephemeral storage — notes survive app restarts but not pod/container recreation. Acceptable for single-pod staging per spec Risks; attaching a persistent volume at `/data` is a deliberate ops decision (namespace has a hard memory ResourceQuota) and is out of scope for these agents.
+- **Optional README.** The spec permits optional, non-behavioral `README.md` run-instruction updates; not assigned as a required task.
