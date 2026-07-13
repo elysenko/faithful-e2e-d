@@ -1,98 +1,206 @@
+/* FaithfulD Book Notes — styling.
+   A calm, readable "reading journal" look: warm paper background, a card-based
+   compose panel and note list, and clear affordances for the delete-confirm flow. */
+
 :root {
-  --bg: #f6f7f9;
+  --bg: #f5f3ee;
+  --bg-accent: #ece7dc;
   --card: #ffffff;
-  --border: #d9dee5;
-  --text: #1f2933;
-  --muted: #667085;
-  --accent: #2f5bea;
-  --danger: #c0392b;
+  --border: #e0dccf;
+  --border-strong: #cdc7b6;
+  --text: #23201a;
+  --muted: #6f6a5f;
+  --accent: #7a4f2b;
+  --accent-strong: #613d1f;
+  --danger: #b23b2e;
+  --danger-strong: #922f24;
+  --focus: #2f5bea;
+  --shadow: 0 1px 2px rgba(35, 32, 26, 0.06), 0 6px 18px rgba(35, 32, 26, 0.06);
+  --radius: 12px;
 }
 
 * { box-sizing: border-box; }
 
+html { -webkit-text-size-adjust: 100%; }
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--bg);
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background:
+    radial-gradient(1200px 500px at 50% -200px, var(--bg-accent), transparent),
+    var(--bg);
   color: var(--text);
-  line-height: 1.5;
+  line-height: 1.55;
+  min-height: 100vh;
 }
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--accent);
+  color: #fff;
+  padding: .6rem 1rem;
+  border-radius: 0 0 8px 0;
+  z-index: 10;
+}
+.skip-link:focus { left: 0; }
 
 .container {
-  max-width: 680px;
-  margin: 2.5rem auto;
-  padding: 0 1.25rem;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 3.5rem;
 }
 
-header h1 {
-  margin: 0 0 .25rem;
-  font-size: 2rem;
+/* Header / brand */
+.app-header { margin-bottom: 1.75rem; }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+}
+
+.brand-mark {
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: saturate(0.9);
+}
+
+.brand-text h1 {
+  margin: 0;
+  font-size: 2.05rem;
+  letter-spacing: -0.01em;
 }
 
 .subtitle {
-  margin: 0 0 1.5rem;
+  margin: .15rem 0 0;
   color: var(--muted);
+  font-size: 1.02rem;
 }
 
-.note-form {
-  display: flex;
-  flex-direction: column;
-  gap: .4rem;
+/* Panels */
+.panel {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1.25rem;
-  margin-bottom: 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.4rem 1.4rem 1.5rem;
+  margin-bottom: 1.6rem;
 }
 
-.note-form label {
+.panel-heading {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+}
+
+/* Compose form */
+.note-form { display: flex; flex-direction: column; gap: 1rem; }
+
+.field { display: flex; flex-direction: column; gap: .35rem; }
+
+.field label {
   font-weight: 600;
-  font-size: .9rem;
+  font-size: .92rem;
 }
 
-.note-form input,
-.note-form textarea {
-  padding: .55rem .65rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+.field input,
+.field textarea {
+  padding: .6rem .7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
   font: inherit;
+  color: var(--text);
+  background: #fffdf9;
   resize: vertical;
+  transition: border-color .12s ease, box-shadow .12s ease;
 }
 
-.note-form button {
-  align-self: flex-start;
-  margin-top: .5rem;
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px rgba(47, 91, 234, 0.15);
 }
 
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.form-actions { display: flex; }
+
+/* Buttons */
 button {
   font: inherit;
   cursor: pointer;
-  padding: .5rem .9rem;
-  border-radius: 6px;
+  padding: .55rem 1rem;
+  border-radius: 8px;
   border: 1px solid transparent;
+  transition: background .12s ease, border-color .12s ease, transform .04s ease;
+}
+button:active { transform: translateY(1px); }
+button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(47, 91, 234, 0.35);
+}
+button:disabled { opacity: .6; cursor: progress; }
+
+button.primary {
   background: var(--accent);
   color: #fff;
 }
+button.primary:hover { background: var(--accent-strong); }
 
 button.secondary {
   background: #fff;
   color: var(--text);
-  border-color: var(--border);
+  border-color: var(--border-strong);
 }
+button.secondary:hover { background: var(--bg-accent); }
 
 button.danger {
   background: var(--danger);
   color: #fff;
 }
+button.danger:hover { background: var(--danger-strong); }
 
+/* Status / error text */
 .error {
   color: var(--danger);
   font-size: .9rem;
-  margin: .25rem 0 0;
+  margin: 0;
 }
 
-h2 {
-  font-size: 1.2rem;
+.status { margin: .25rem 0 0; }
+.status-loading { color: var(--muted); }
+.status-error { color: var(--danger); font-weight: 600; }
+.empty {
+  color: var(--muted);
+  background: var(--bg-accent);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+/* Notes list */
+.notes-panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+.notes-panel-header .panel-heading { margin: 0; }
+
+.notes-count {
+  color: var(--muted);
+  font-size: .85rem;
+  white-space: nowrap;
 }
 
 .notes {
@@ -101,34 +209,44 @@ h2 {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: .75rem;
+  gap: .85rem;
 }
 
 .note {
-  background: var(--card);
+  background: #fffdf9;
   border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
   border-radius: 10px;
   padding: 1rem 1.1rem;
+  box-shadow: var(--shadow);
 }
 
 .note-title {
   margin: 0 0 .3rem;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
 }
 
 .note-body {
-  margin: 0 0 .5rem;
+  margin: 0 0 .55rem;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .note-meta {
   display: block;
   color: var(--muted);
-  font-size: .8rem;
-  margin-bottom: .6rem;
+  font-size: .78rem;
+  margin-bottom: .7rem;
 }
 
 .note-actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.confirm {
   display: flex;
   align-items: center;
   gap: .5rem;
@@ -141,6 +259,15 @@ h2 {
   font-weight: 600;
 }
 
-.empty {
+/* Footer */
+.app-footer {
+  margin-top: 2rem;
+  text-align: center;
   color: var(--muted);
+  font-size: .82rem;
+}
+
+@media (max-width: 520px) {
+  .container { padding: 1.75rem 1rem 2.5rem; }
+  .brand-text h1 { font-size: 1.7rem; }
 }
